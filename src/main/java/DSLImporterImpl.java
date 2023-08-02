@@ -1,3 +1,5 @@
+import model.DSLFile;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -5,6 +7,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class DSLImporterImpl implements DSLImporter {
+    StringBuilder importTree = new StringBuilder();
+
     @Override
     public boolean isValid(String rootPath) {
         if (!(new File(rootPath).isDirectory())) {
@@ -19,28 +23,25 @@ public class DSLImporterImpl implements DSLImporter {
     }
 
     @Override
-    public Map<String, List<String>> prepareImportList(String filePath) {
-        // TreeMap keeps all elements in sorted order
-        Map<String, List<String>> importMap = new TreeMap<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+    public StringBuilder prepareImportTree(DSLFile dslFile, Set<Object> visitedFiles) {
+        importTree.append(getIndentation(dslFile.getIndentSize())).append(dslFile.getFileName());
+        importTree.append("\n");
+        // Check file context already read
+        if (!visitedFiles.add(dslFile.getFileName())) {
+            return importTree;
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(dslFile.getFullPath()))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                // interested text 'import' and should contain '.lib' text
-                if (line.trim().startsWith("import ") && line.contains(".lib")) {
-                    String importedFile = line.trim().replace("import ", "");
-                    if (importedFile.endsWith(";")) {
-                        importedFile = importedFile.substring(0, importedFile.length() - 1);
-                    }
-                    String[] parts = importedFile.split("/");
-                    String parentPath = "";
-                    for (int i = 0; i < parts.length - 1; i++) {
-                        parentPath += parts[i] + "/";
-                    }
-                    String fileName = parts[parts.length - 1];
-                    if (!importMap.containsKey(parentPath)) {
-                        importMap.put(parentPath, new ArrayList<>());
-                    }
-                    importMap.get(parentPath).add(fileName);
+                if (line.trim().startsWith("import")) {
+                    String importedFile = String.join("/", line.split("/")).replace("import ./", "").replace(";", "");
+                    String[] filePathArray = importedFile.split("/");
+                    prepareImportTree(new DSLFile(
+                            filePathArray[filePathArray.length - 1],// FileName
+                            dslFile.getDirectoryPath() + "/" + importedFile,// Full path
+                            dslFile.getDirectoryPath(),//Input directory path
+                            dslFile.getIndentSize() + 4//Structure indent size
+                    ), visitedFiles);
                 }
             }
         } catch (IOException e) {
@@ -48,17 +49,15 @@ public class DSLImporterImpl implements DSLImporter {
         } catch (Exception e) {
             System.out.println("Error:" + e.getMessage());
         }
-        return importMap;
+        return importTree;
     }
 
     @Override
-    public void displayImportStructure(String progName, int indentSize, Map<String, List<String>> importMap) {
-        System.out.println(progName);
-        int level = 1;
-        for (Map.Entry<String, List<String>> entry : importMap.entrySet()) {
-            String indent = " ".repeat(indentSize * level);
-            importMap.get(entry.getKey()).forEach((value) -> System.out.println(indent + value));
-            level += 1;
-        }
+    public void displayImportStructure(StringBuilder importTree) {
+        System.out.println(importTree);
+    }
+
+    private String getIndentation(int indent) {
+        return " ".repeat(Math.max(0, indent));
     }
 }

@@ -1,10 +1,11 @@
-import java.util.List;
-import java.util.Map;
+import model.DSLFile;
+
+import java.util.Set;
 
 public interface DSLImporter {
     boolean isValid(String rootPath);
 
-    Map<String, List<String>> prepareImportList(String filePath);
+    StringBuilder prepareImportTree(DSLFile dslFile, Set<Object> visitedFiles);
 
-    void displayImportStructure(String progName, int indentSize, Map<String, List<String>> importMap);
+    void displayImportStructure(StringBuilder importTree);
 }

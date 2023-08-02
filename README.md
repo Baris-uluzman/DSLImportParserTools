@@ -30,7 +30,7 @@ This tool takes as input a path to a root program, then parse the program and di
   * You can give sample directory from resource folder in test
   ```bash
   javac DSLImportParser.java
-  java DSLImportParser src/test/resources/example3
+  java DSLImportParser C://project/test/proj/DSLImportParserTool/src/test/resources/example4
   ```
   * Expected result shows below:
   * [![Diagram](docs/expectedResult.png)](docs/expectedResult.png)
